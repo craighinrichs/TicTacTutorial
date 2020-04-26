@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TicTacToe {
 
@@ -7,14 +9,17 @@ namespace TicTacToe {
 
 		public static void Main(string[] args) {
 
-			string[] boards = new string[9];
-			for (int i = 0; i < 9; i++) {
-				boards[i] = " ";
-			}
-
+			string[] rows = new string[6] { "A", "B", "C", "1", "2", "3" };
 
 			string playerTurn = "O";
 			string winMessage = "";
+
+			Dictionary<string, string> board = new Dictionary<string, string>();
+			foreach (int index in Enumerable.Range(0, 3)) {
+				foreach (int j in Enumerable.Range(0, 3)) {
+					board.Add(rows[index] + rows[(j + 3)], " ");
+				}
+			}
 
 			bool gameOver = false;
 
@@ -23,11 +28,11 @@ namespace TicTacToe {
 
 				Console.WriteLine(" --- TicTacToe ---");
 				Console.WriteLine("   1   2   3  ");
-				Console.WriteLine("A  {0} | {1} | {2} ", boards[0], boards[1], boards[2]);
+				Console.WriteLine("A  {0} | {1} | {2} ", board["A1"], board["A2"], board["A3"]);
 				Console.WriteLine("  -----------");
-				Console.WriteLine("B  {0} | {1} | {2} ", boards[3], boards[4], boards[5]);
+				Console.WriteLine("B  {0} | {1} | {2} ", board["B1"], board["B2"], board["B3"]);
 				Console.WriteLine("  -----------");
-				Console.WriteLine("C  {0} | {1} | {2} ", boards[6], boards[7], boards[8]);
+				Console.WriteLine("C  {0} | {1} | {2} ", board["C1"], board["C2"], board["C3"]);
 
 				if (winMessage.Length > 0) {
 					Console.WriteLine(winMessage);
@@ -36,9 +41,10 @@ namespace TicTacToe {
 				}
 
 				bool emptySpotFound = false;
-				for (int i = 0; i < 9; i++) {
-					if (string.IsNullOrWhiteSpace(boards[i])) {
+				foreach (var entry in board.Values) {
+					if (string.IsNullOrWhiteSpace(entry)) {
 						emptySpotFound = true;
+						break;
 					}
 				}
 
@@ -57,41 +63,10 @@ namespace TicTacToe {
 
 				string upperCase = answer.ToUpper();
 
-				char[] charArray = upperCase.ToCharArray(0, 2);
-
-
 				bool spotTakenError = false;
 
-				if (charArray[0] == 'A') {
-					if (charArray[1] == '1') {
-						boards[0] = playerTurn;
-					} else if (charArray[1] == '2') {
-						boards[1] = playerTurn;
-					} else if (charArray[1] == '3') {
-						boards[2] = playerTurn;
-					} else {
-						spotTakenError = true;
-					}
-				} else if (charArray[0] == 'B') {
-					if (charArray[1] == '1') {
-						boards[3] = playerTurn;
-					} else if (charArray[1] == '2') {
-						boards[4] = playerTurn;
-					} else if (charArray[1] == '3') {
-						boards[5] = playerTurn;
-					} else {
-						spotTakenError = true;
-					}
-				} else if (charArray[0] == 'C') {
-					if (charArray[1] == '1') {
-						boards[6] = playerTurn;
-					} else if (charArray[1] == '2') {
-						boards[7] = playerTurn;
-					} else if (charArray[1] == '3') {
-						boards[8] = playerTurn;
-					} else {
-						spotTakenError = true;
-					}
+				if (board.ContainsKey(upperCase)) {
+					board[upperCase] = playerTurn;
 				} else {
 					spotTakenError = true;
 				}
@@ -105,16 +80,17 @@ namespace TicTacToe {
 				}
 
 				// Check the win state. 
-				bool topRowWin = boards[0] == playerTurn && boards[1] == playerTurn && boards[2] == playerTurn;
-				bool midRowWin = boards[3] == playerTurn && boards[4] == playerTurn && boards[5] == playerTurn;
-				bool botpRowWin = boards[6] == playerTurn && boards[7] == playerTurn && boards[8] == playerTurn;
-				bool colOneWin = boards[0] == playerTurn && boards[3] == playerTurn && boards[6] == playerTurn;
-				bool colTwoWin = boards[1] == playerTurn && boards[4] == playerTurn && boards[7] == playerTurn;
-				bool colThreeWin = boards[2] == playerTurn && boards[5] == playerTurn && boards[8] == playerTurn;
-				bool leftRightWin = boards[0] == playerTurn && boards[4] == playerTurn && boards[8] == playerTurn;
-				bool rightLeftWin = boards[2] == playerTurn && boards[4] == playerTurn && boards[6] == playerTurn;
+				bool playerWon = false;
+				foreach (string letter in rows) {
+					if (board.Where(l => l.Key.Contains(letter) && l.Value.Equals(playerTurn)).Count() == 3) {
+						playerWon = true;
+					}
+				}
 
-				if (topRowWin || midRowWin || botpRowWin || colOneWin || colTwoWin || colThreeWin || leftRightWin || rightLeftWin) {
+				bool leftRightWin = board["A1"] == playerTurn && board["B2"] == playerTurn && board["C3"] == playerTurn;
+				bool rightLeftWin = board["A3"] == playerTurn && board["B2"] == playerTurn && board["C1"] == playerTurn;
+
+				if (playerWon || leftRightWin || rightLeftWin) {
 					winMessage = string.Format("{0} wins!", playerTurn);
 				}
 			}
