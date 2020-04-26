@@ -4,22 +4,45 @@ using System.Linq;
 
 namespace TicTacToe {
 
+	static class PlayerExtension {
+		public static int Board(this MainClass.Players player) {
+			return MainClass.storage[player];
+		}
+		public static void SetBoard(this MainClass.Players player, int addValue) {
+			MainClass.storage[player] |= addValue;
+		}
+		public static string Name(this MainClass.Players player) {
+			return player.ToString();
+		}
+		public static void Switch(this MainClass.Players player) {
+			MainClass.playerTurn = (MainClass.Players)((((int)player) + 1) % Enum.GetNames(typeof(MainClass.Players)).Length);
+		}
+	}
 
 	class MainClass {
 
-		public static void Main(string[] args) {
+		public static Dictionary<Players, int> storage = new Dictionary<Players, int>() {
+			{Players.X,0 },
+			{Players.O,0 }
+		};
+		public enum Players {
+			X,
+			O
+		}
 
-			string[] rows = new string[6] { "A", "B", "C", "1", "2", "3" };
-
-			string playerTurn = "O";
-			string winMessage = "";
-
-			Dictionary<string, string> board = new Dictionary<string, string>();
-			foreach (int index in Enumerable.Range(0, 3)) {
-				foreach (int j in Enumerable.Range(0, 3)) {
-					board.Add(rows[index] + rows[(j + 3)], " ");
+		public static string Owner(int location) {
+			foreach (Players player in (Players[])Enum.GetValues(typeof(Players))) {
+				if ((player.Board() & location) == location) {
+					return player.Name();
 				}
 			}
+			return " ";
+		}
+		public static Players playerTurn = Players.X;
+
+		public static void Main(string[] args) {
+
+			string winMessage = "";
 
 			bool gameOver = false;
 
@@ -28,11 +51,11 @@ namespace TicTacToe {
 
 				Console.WriteLine(" --- TicTacToe ---");
 				Console.WriteLine("   1   2   3  ");
-				Console.WriteLine("A  {0} | {1} | {2} ", board["A1"], board["A2"], board["A3"]);
+				Console.WriteLine("A  {0} | {1} | {2} ", Owner(0b000000001), Owner(0b000000010), Owner(0b000000100));
 				Console.WriteLine("  -----------");
-				Console.WriteLine("B  {0} | {1} | {2} ", board["B1"], board["B2"], board["B3"]);
+				Console.WriteLine("B  {0} | {1} | {2} ", Owner(0b000001000), Owner(0b000010000), Owner(0b000100000));
 				Console.WriteLine("  -----------");
-				Console.WriteLine("C  {0} | {1} | {2} ", board["C1"], board["C2"], board["C3"]);
+				Console.WriteLine("C  {0} | {1} | {2} ", Owner(0b001000000), Owner(0b010000000), Owner(0b100000000));
 
 				if (winMessage.Length > 0) {
 					Console.WriteLine(winMessage);
@@ -40,73 +63,43 @@ namespace TicTacToe {
 					continue;
 				}
 
-				bool emptySpotFound = false;
-				foreach (var entry in board.Values) {
-					if (string.IsNullOrWhiteSpace(entry)) {
-						emptySpotFound = true;
-						break;
-					}
-				}
-
-				if (emptySpotFound == false) {
+				if ((Players.X.Board() & Players.O.Board()) == 0b111111111) {
 					Console.WriteLine("It's a DRAW!");
 					gameOver = true;
 					continue;
 				}
 
-				playerTurn = SwitchPlayers(playerTurn);
+				playerTurn.Switch();
 
 				Console.WriteLine("Player {0}: It's your turn.", playerTurn);
 				Console.WriteLine("Please enter a LETTER then a NUMBER: Example A2 ");
 				Console.Write("-->:");
 				string answer = Console.ReadLine();
-
 				string upperCase = answer.ToUpper();
 
-				bool spotTakenError = false;
+				bool invalidInputError = false;
 
-				if (board.ContainsKey(upperCase)) {
-					board[upperCase] = playerTurn;
+				char[] charArray = upperCase.ToCharArray(0, 2);
+				int row = Math.Abs('A' - charArray[0]);
+				int col = Math.Abs('1' - charArray[1]);
+
+				if (upperCase.Length == 2 && row >= 0 && row <= 2 && col >= 0 && col <= 2) {
+					int selection = 1 << (row * 3);
+					selection <<= col;
+					playerTurn.SetBoard(selection);
 				} else {
-					spotTakenError = true;
+					invalidInputError = true;
 				}
 
-				if (spotTakenError == true) {
+				if (invalidInputError) {
 					Console.Clear();
 					Console.WriteLine("You entered {0} as an invalid input. please try again.\n", answer);
-					playerTurn = SwitchPlayers(playerTurn);
+					playerTurn.Switch();
 					Console.WriteLine("Press Any Key to Continue:");
 					Console.ReadLine();
 				}
-
-				// Check the win state. 
-				bool playerWon = false;
-				foreach (string letter in rows) {
-					if (board.Where(l => l.Key.Contains(letter) && l.Value.Equals(playerTurn)).Count() == 3) {
-						playerWon = true;
-					}
-				}
-
-				bool leftRightWin = board["A1"] == playerTurn && board["B2"] == playerTurn && board["C3"] == playerTurn;
-				bool rightLeftWin = board["A3"] == playerTurn && board["B2"] == playerTurn && board["C1"] == playerTurn;
-
-				if (playerWon || leftRightWin || rightLeftWin) {
-					winMessage = string.Format("{0} wins!", playerTurn);
-				}
 			}
-
 			Console.WriteLine("Thanks for playing!");
 		}
-
-		private static string SwitchPlayers(string playerTurn) {
-			if (playerTurn.Equals("X")) {
-				playerTurn = "O";
-			} else if (playerTurn.Equals("O")) {
-				playerTurn = "X";
-			}
-
-			return playerTurn;
-		}
 	}
-
 }
